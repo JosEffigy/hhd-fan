@@ -97,6 +97,22 @@ def calculate_fan_speed(
     return v_new, False, {"a": a_new, "v": v_new, "t_target": t_target}
 
 
+def validate_fan_curve(fan_curve: dict[int, float]) -> None:
+    """Reject malformed curves before they can reach a hardware endpoint."""
+    if not fan_curve:
+        raise ValueError("fan curve is empty")
+    temperatures = list(fan_curve)
+    if temperatures != sorted(temperatures):
+        raise ValueError("fan curve temperatures must be strictly increasing")
+    if len(set(temperatures)) != len(temperatures):
+        raise ValueError("fan curve contains duplicate temperatures")
+    for temperature, duty in fan_curve.items():
+        if not 0 <= temperature <= 120:
+            raise ValueError(f"fan curve temperature out of range: {temperature}")
+        if not 0.0 <= duty <= 1.0:
+            raise ValueError(f"fan curve duty out of range at {temperature}C: {duty}")
+
+
 def set_fans_to_pwm(enable: bool, fan_info: FanInfo):
     for _, fn_enable, _, legacy in fan_info["fans"]:
         with open(fn_enable, "w") as f:
@@ -113,6 +129,7 @@ def update_fan_speed(
     junction: bool,
     observe_only: bool = False,
 ) -> tuple[bool, FanState]:
+    validate_fan_curve(fan_curve)
     t_edge = read_temp(fan_info["edge"])
     if fan_info["tctl"] is not None:
         t_junction = read_temp(fan_info["tctl"])
@@ -157,6 +174,7 @@ def fan_worker(
     junction: Event,
 ):
     try:
+        validate_fan_curve(fan_curve)
         set_fans_to_pwm(True, info)
         while not should_exit.is_set():
             with lock:
@@ -165,11 +183,14 @@ def fan_worker(
                     state_tmp, info, fan_curve, junction.is_set()
                 )
                 state.update(state_tmp)
-            time.sleep(SETPOINT_UPDATE_T if in_setpoint else UPDATE_T)
+            should_exit.wait(SETPOINT_UPDATE_T if in_setpoint else UPDATE_T)
     except Exception as e:
-        logger.error(f"Fan worker failed:\n{e}")
+        logger.exception("Fan worker failed; returning control to the kernel")
     finally:
-        set_fans_to_pwm(False, info)
+        try:
+            set_fans_to_pwm(False, info)
+        except OSError:
+            logger.exception("Could not restore kernel fan control")
 
 
 def fan_pwm_tester(normal_curve: bool = True, observe_only: bool = False):
