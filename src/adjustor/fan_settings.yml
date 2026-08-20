@@ -1,0 +1,29 @@
+fan:
+  title: Fan Control
+  type: container
+  children:
+    enabled:
+      title: Enable Manual Fan Control
+      type: bool
+      default: false
+      tags: [verify]
+      hint: >-
+        Enables manual control only when a supported PWM fan and temperature
+        sensor are detected. Disabling restores kernel automatic control.
+    sensor:
+      title: Temperature Sensor
+      type: multiple
+      default: edge
+      options:
+        edge: GPU Edge
+        junction: CPU Junction
+    st40: {title: "40°C", type: int, min: 0, max: 100, default: 25, unit: "%"}
+    st50: {title: "50°C", type: int, min: 0, max: 100, default: 35, unit: "%"}
+    st60: {title: "60°C", type: int, min: 0, max: 100, default: 50, unit: "%"}
+    st70: {title: "70°C", type: int, min: 0, max: 100, default: 70, unit: "%"}
+    st80: {title: "80°C", type: int, min: 0, max: 100, default: 85, unit: "%"}
+    st90: {title: "90°C", type: int, min: 0, max: 100, default: 100, unit: "%"}
+    status:
+      title: Status
+      type: display
+      default: Automatic control

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Fan Control
+Comment=Open the hhd-fan overlay
+Exec=hhd-fan-overlay
+Icon=utilities-system-monitor
+Terminal=false
+Categories=System;Settings;
+StartupNotify=false

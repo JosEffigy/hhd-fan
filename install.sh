@@ -1,71 +1,45 @@
-#!/usr/bin/bash
-# Installs Handheld Daemon to ~/.local/share/hhd
+#!/usr/bin/env bash
+# Install hhd-fan and its packaged Tauri overlay runtime.
+set -euo pipefail
 
-if [ "$EUID" = 0 ]; then 
-  echo "You should run this script as your user, not root (sudo)."
-  exit
-fi
+repo="https://github.com/JosEffigy/hhd-fan.git"
+raw="https://raw.githubusercontent.com/JosEffigy/hhd-fan/master"
 
-is_bazzite=$(cat /etc/os-release  | sed -e 's/\(.*\)/\L\1/' | grep bazzite-deck)
-if [ "${is_bazzite}" ]; then
-  echo "Handheld Daemon is preinstalled on bazzite-deck."
-  echo "If your device is not whitelisted, you can enable Handheld Daemon with the command:"
-  echo "sudo systemctl enable --now hhd@\$(whoami)"
-  exit
-fi
+command -v pip3 >/dev/null || { echo "pip3 is required." >&2; exit 1; }
+command -v curl >/dev/null || { echo "curl is required." >&2; exit 1; }
 
-is_steamos=$(cat /etc/os-release  | grep ID=steamos)
-if [[ -n "${is_steamos}" && -z "${BYPASS_STEAMOS_CHECK}" ]]; then
-  echo "Installing Handheld Daemon on SteamOS is not canon."
-  echo
-  echo "Did you mean to install Bazzite? https://bazzite.gg"
-  exit
-fi
+echo "Installing hhd-fan..."
+pip3 install --upgrade "git+${repo}"
 
-set -e
+echo "Installing service and device rules..."
+sudo mkdir -p /usr/lib/udev/rules.d /usr/lib/systemd/system
+sudo curl -fsSL "${raw}/usr/lib/udev/rules.d/83-hhd.rules" -o /usr/lib/udev/rules.d/83-hhd.rules
+sudo curl -fsSL "${raw}/usr/lib/systemd/system/hhd_local@.service" -o /usr/lib/systemd/system/hhd_local@.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now "hhd_local@${USER}"
 
-# Install Handheld Daemon to ~/.local/share/hhd
-mkdir -p ~/.local/share/hhd && cd ~/.local/share/hhd
+echo "Installing the packaged Tauri overlay..."
+tmpdir=$(mktemp -d)
+trap 'rm -rf "${tmpdir}"' EXIT
+case "$(. /etc/os-release && printf '%s' "${ID_LIKE:-$ID}")" in
+  *debian*|*ubuntu*)
+    ui_url="https://github.com/JosEffigy/hhd-fan/releases/latest/download/hhd-fan-ui-linux-amd64.deb"
+    curl -fL "${ui_url}" -o "${tmpdir}/hhd-fan-ui.deb"
+    sudo apt-get install -y "${tmpdir}/hhd-fan-ui.deb"
+    ;;
+  *fedora*|*rhel*|*suse*)
+    ui_url="https://github.com/JosEffigy/hhd-fan/releases/latest/download/hhd-fan-ui-linux-x86_64.rpm"
+    curl -fL "${ui_url}" -o "${tmpdir}/hhd-fan-ui.rpm"
+    if command -v dnf >/dev/null; then
+      sudo dnf install -y "${tmpdir}/hhd-fan-ui.rpm"
+    else
+      sudo zypper --non-interactive install "${tmpdir}/hhd-fan-ui.rpm"
+    fi
+    ;;
+  *)
+    echo "Unsupported package manager. Install the hhd-fan-ui .deb or .rpm release manually." >&2
+    exit 1
+    ;;
+esac
 
-python3 -m venv --system-site-packages venv
-source venv/bin/activate
-pip3 install --upgrade hhd adjustor
-
-# Install udev rules and create a service file
-sudo mkdir -p /etc/udev/rules.d/
-sudo mkdir -p /etc/udev/hwdb.d/
-sudo curl https://raw.githubusercontent.com/hhd-dev/hhd/master/usr/lib/udev/rules.d/83-hhd.rules -o /etc/udev/rules.d/83-hhd.rules
-sudo curl https://raw.githubusercontent.com/hhd-dev/hhd/master/usr/lib/udev/hwdb.d/83-hhd.hwdb -o /etc/udev/hwdb.d/83-hhd.hwdb
-sudo curl https://raw.githubusercontent.com/hhd-dev/hhd/master/usr/lib/systemd/system/hhd_local%40.service -o /etc/systemd/system/hhd_local@.service
-
-# Add hhd to user path
-mkdir -p ~/.local/bin
-ln -sf ~/.local/share/hhd/venv/bin/hhd ~/.local/bin/hhd
-ln -sf ~/.local/share/hhd/venv/bin/hhd.contrib ~/.local/bin/hhd.contrib
-
-FINAL_URL='https://api.github.com/repos/hhd-dev/hhd-ui/releases/latest'
-curl -L $(curl -s "${FINAL_URL}" | grep "browser_download_url" | cut -d '"' -f 4) -o $HOME/.local/bin/hhd-ui
-chmod +x $HOME/.local/bin/hhd-ui
-
-if [ -f /sys/fs/selinux/enforce ]; then
-  # The presence of this file means SELinux is loaded in the kernel.
-  # A value of 0 means Permissive, 1 means Enforcing.
-  selinux_enforcing=$(cat /sys/fs/selinux/enforce)
-  if [[ "$selinux_enforcing" != "0" ]]; then
-    echo "SELinux is loaded and in enforcing mode: changing hhd file security contextes:"
-    # Fedora Atomic derived distros (e.g. bazzite-gnome) have /home as a symlink to /var/home
-    user_home_dir=$(readlink -f $HOME)
-    sudo semanage fcontext -a -t bin_t $user_home_dir/.local/share/hhd/venv/bin/'.*'
-    sudo restorecon -Rv $user_home_dir//.local/share/hhd/venv/bin/
-  fi
-fi
-
-# Start service and reboot
-sudo systemctl enable --now hhd_local@$(whoami)
-
-echo ""
-echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-echo "!!! Do not forget to remove a Bundled Handheld Daemon if your distro preinstalls it. !!!"
-echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-echo ""
-echo "Reboot!"
+echo "Installed. Launch the fan overlay with: hhd-fan-overlay"

@@ -106,6 +106,11 @@ def validate_fan_curve(fan_curve: dict[int, float]) -> None:
         raise ValueError("fan curve temperatures must be strictly increasing")
     if len(set(temperatures)) != len(temperatures):
         raise ValueError("fan curve contains duplicate temperatures")
+    duties = list(fan_curve.values())
+    if duties != sorted(duties):
+        raise ValueError("fan duty must not decrease as temperature increases")
+    if duties[-1] < 0.8:
+        raise ValueError("highest-temperature fan duty must be at least 80%")
     for temperature, duty in fan_curve.items():
         if not 0 <= temperature <= 120:
             raise ValueError(f"fan curve temperature out of range: {temperature}")
@@ -138,6 +143,8 @@ def update_fan_speed(
 
     t_curr = t_junction if junction else t_edge
     assert t_curr is not None, "Current temperature cannot be None"
+    if not -20 <= t_curr <= 125:
+        raise RuntimeError(f"temperature sensor returned an unsafe value: {t_curr}C")
     
     data = state["fan_data"] if state else None
     v_curr, in_setpoint, data = calculate_fan_speed(t_curr, data, fan_curve, junction)
@@ -149,6 +156,10 @@ def update_fan_speed(
                 write_fan_speed(v_fn, v_curr_int)
 
     fan_speeds = [read_fan_speed(rpm_fn) for _, _, rpm_fn, _ in fan_info["fans"] if rpm_fn]
+    stalled = bool(fan_speeds) and v_curr_int >= 76 and all(rpm <= 0 for rpm in fan_speeds)
+    stall_count = (state.get("stall_count", 0) + 1) if state and stalled else int(stalled)
+    if stall_count >= 10:
+        raise RuntimeError("fan RPM watchdog detected no rotation under manual PWM")
     return (
         in_setpoint,
         {
@@ -161,6 +172,7 @@ def update_fan_speed(
             "t_target": data["t_target"],
             "fan_data": data,
             "in_setpoint": in_setpoint,
+            "stall_count": stall_count,
         },
     )
 

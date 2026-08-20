@@ -1,10 +1,10 @@
 [project]
-name = "hhd"
+name = "hhd-fan"
 version = "4.1.10"
 authors = [
   { name="Kapenekakis Antheas", email="pypi@antheas.dev" },
 ]
-description = "Handheld Daemon, a tool for configuring handheld devices."
+description = "Focused, safety-first handheld fan control service."
 readme = "readme.md"
 requires-python = ">=3.10"
 license = {text = "LGPL-2.1-or-later"}
@@ -34,27 +34,13 @@ dependencies = [
 [project.entry-points."console_scripts"]
 hhd = "hhd.__main__:main"
 hhdctl = "hhd.http.ctl:main"
+hhd-fan-overlay = "hhd.fanctl:main"
 "hhd.contrib" = "hhd.contrib:main"
 "hhd.steamos" = "hhd.http.steamos:main"
 
 [project.entry-points."hhd.plugins"]
-adjustor = "adjustor.hhd:autodetect"
-legion_go = "hhd.device.legion_go:autodetect"
-rog_ally = "hhd.device.rog_ally:autodetect"
-gpd_win = "hhd.device.gpd.win:autodetect"
-msi_claw = "hhd.device.claw:autodetect"
-onexplayer = "hhd.device.oxp:autodetect"
-orange_pi = "hhd.device.orange_pi:autodetect"
-ayaneo = "hhd.device.ayaneo:autodetect"
-generic = "hhd.device.generic:autodetect"
-powerbuttond = "hhd.plugins.powerbutton:autodetect"
-aura = "hhd.device.aura:autodetect"
-rgb = "hhd.plugins.rgb:autodetect"
-overlay = "hhd.plugins.overlay:autodetect"
-bootc = "hhd.plugins.bootc:autodetect"
-debug = "hhd.plugins.debug:autodetect"
-power = "hhd.plugins.power:autodetect"
-# display = "hhd.plugins.display:autodetect"
+adjustor_fan = "adjustor.fan_hhd:autodetect"
+fan_overlay = "hhd.plugins.fan_overlay:autodetect"
 
 [project.entry-points."hhd.i18n"]
 hhd = "hhd.i18n:locales"
@@ -69,3 +55,6 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]  # list of folders that contain the packages (["."] by default)
 include = ["hhd*", "adjustor*"]
+
+[tool.setuptools.data-files]
+"share/applications" = ["usr/share/applications/hhd-fan-overlay.desktop"]
