@@ -7,16 +7,42 @@ raw="https://raw.githubusercontent.com/JosEffigy/hhd-fan/master"
 
 command -v pip3 >/dev/null || { echo "pip3 is required." >&2; exit 1; }
 command -v curl >/dev/null || { echo "curl is required." >&2; exit 1; }
+command -v git >/dev/null || { echo "git is required." >&2; exit 1; }
+[ "$(uname -s)" = "Linux" ] || { echo "hhd-fan supports Linux only." >&2; exit 1; }
+[ "$(uname -m)" = "x86_64" ] || { echo "hhd-fan currently supports x86_64 only." >&2; exit 1; }
+command -v systemctl >/dev/null || { echo "A systemd-based host is required." >&2; exit 1; }
+
+supported_fan=0
+for name_file in /sys/class/hwmon/hwmon*/name; do
+  [ -r "${name_file}" ] || continue
+  case "$(cat "${name_file}")" in
+    oxp_ec|gpdfan|ayaneo_ec|oxpec)
+      hwmon_dir=$(dirname "${name_file}")
+      for pwm in "${hwmon_dir}"/pwm[0-9]*; do
+        [ -e "${pwm}_enable" ] && supported_fan=1
+      done
+      ;;
+  esac
+done
+[ "${supported_fan}" -eq 1 ] || {
+  echo "No safe, supported fan interface was found. Installation rejected." >&2
+  exit 1
+}
 
 echo "Installing hhd-fan..."
 pip3 install --upgrade "git+${repo}"
 
+if ! python3 -c 'from adjustor.core.fan import get_fan_info; raise SystemExit(0 if get_fan_info() else 1)'; then
+  echo "No safe, supported fan capability was found. Nothing was installed as a service." >&2
+  exit 1
+fi
+
 echo "Installing service and device rules..."
 sudo mkdir -p /usr/lib/udev/rules.d /usr/lib/systemd/system
 sudo curl -fsSL "${raw}/usr/lib/udev/rules.d/83-hhd.rules" -o /usr/lib/udev/rules.d/83-hhd.rules
-sudo curl -fsSL "${raw}/usr/lib/systemd/system/hhd_local@.service" -o /usr/lib/systemd/system/hhd_local@.service
+sudo curl -fsSL "${raw}/usr/lib/systemd/system/hhd_fan@.service" -o /usr/lib/systemd/system/hhd_fan@.service
 sudo systemctl daemon-reload
-sudo systemctl enable --now "hhd_local@${USER}"
+sudo systemctl enable --now "hhd_fan@${USER}"
 
 echo "Installing the packaged Tauri overlay..."
 tmpdir=$(mktemp -d)

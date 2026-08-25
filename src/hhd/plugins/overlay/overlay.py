@@ -31,9 +31,21 @@ def find_overlay_exe(uid: Context | int | None = None) -> str | None:
 
 
 def inject_overlay(fn: str, display: str, uid: int):
+    # Gamescope's overlay display is an Xwayland display. Force GTK/WebKit
+    # clients such as the Tauri UI onto that display instead of letting a host
+    # Wayland session steal the window. Preserve the per-user runtime directory
+    # required by GTK/DBus while keeping the overlay process isolated.
+    runtime = f"/run/user/{uid}"
     out = subprocess.Popen(
         [fn],
-        env={"HOME": expanduser("~", uid), "DISPLAY": display, "STEAM_OVERLAY": "1"},
+        env={
+            "HOME": expanduser("~", uid),
+            "DISPLAY": display,
+            "GDK_BACKEND": "x11",
+            "XDG_RUNTIME_DIR": runtime,
+            "DBUS_SESSION_BUS_ADDRESS": f"unix:path={runtime}/bus",
+            "STEAM_OVERLAY": "1",
+        },
         text=True,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
@@ -46,12 +58,16 @@ def inject_overlay(fn: str, display: str, uid: int):
 
 
 def launch_overlay_de(fn: str, display: str, auth: str | None, uid: int, gid: int):
+    runtime = f"/run/user/{uid}"
     out = subprocess.Popen(
         [fn],
         env={
             "HOME": expanduser("~", uid),
             "XAUTHORITY": auth or "",
             "DISPLAY": display,
+            "GDK_BACKEND": "x11",
+            "XDG_RUNTIME_DIR": runtime,
+            "DBUS_SESSION_BUS_ADDRESS": f"unix:path={runtime}/bus",
             "HHD_MANAGED": "1",
         },
         text=True,

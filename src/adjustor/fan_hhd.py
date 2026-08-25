@@ -8,6 +8,7 @@ from threading import Event, Lock, Thread
 from typing import Sequence
 
 from hhd.plugins import Config, Context, HHDPlugin, load_relative_yaml
+from hhd.fan_conflict import active_upstream_hhd
 
 from adjustor.core.fan import fan_worker, get_fan_info
 from adjustor.core.fan.core import validate_fan_curve
@@ -29,9 +30,17 @@ class FanPlugin(HHDPlugin):
         self.lock = Lock()
         self.curve: dict[int, float] = {}
         self.state: dict = {}
+        self.conflict: str | None = None
 
     def open(self, emit, context: Context) -> None:
         self.emit = emit
+        self.conflict = active_upstream_hhd()
+        if self.conflict:
+            logger.critical(
+                "Refusing to start fan control: %s. Stop HHD or use HHD's fan controller, never both.",
+                self.conflict,
+            )
+            return
         self.info = get_fan_info()
         if self.info:
             logger.info("Supported fan capability detected: %d fan(s)", len(self.info["fans"]))

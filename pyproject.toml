@@ -28,15 +28,12 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/hhd-dev/hhd"
-"Bug Tracker" = "https://github.com/hhd-dev/hhd/issues"
+"Homepage" = "https://github.com/JosEffigy/hhd-fan"
+"Bug Tracker" = "https://github.com/JosEffigy/hhd-fan/issues"
 
 [project.entry-points."console_scripts"]
-hhd = "hhd.__main__:main"
-hhdctl = "hhd.http.ctl:main"
+hhd-fan = "hhd.__main__:main"
 hhd-fan-overlay = "hhd.fanctl:main"
-"hhd.contrib" = "hhd.contrib:main"
-"hhd.steamos" = "hhd.http.steamos:main"
 
 [project.entry-points."hhd.plugins"]
 adjustor_fan = "adjustor.fan_hhd:autodetect"
@@ -58,3 +55,4 @@ include = ["hhd*", "adjustor*"]
 
 [tool.setuptools.data-files]
 "share/applications" = ["usr/share/applications/hhd-fan-overlay.desktop"]
+"lib/systemd/system" = ["usr/lib/systemd/system/hhd_fan@.service"]

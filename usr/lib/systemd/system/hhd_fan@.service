@@ -1,0 +1,13 @@
+[Unit]
+Description=hhd-fan service
+After=systemd-user-sessions.service
+
+[Service]
+Type=simple
+User=%i
+ExecStart=/home/%i/.local/bin/hhd-fan --user %i
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,18 @@
+--- a/src/input/composite_device/mod.rs
++++ b/src/input/composite_device/mod.rs
+@@ -1081,6 +1081,15 @@ impl CompositeDevice {
+     async fn write_event(&self, event: NativeEvent) -> Result<(), Box<dyn Error>> {
+         let cap = event.as_capability();
+
++        // Mirror logical QAM to D-Bus without intercepting it. Consumers then
++        // follow the active profile's QAM mapping while Steam still receives it.
++        if matches!(
++            cap,
++            Capability::Gamepad(Gamepad::Button(GamepadButton::QuickAccess))
++        ) {
++            self.targets.write_dbus_event(event.clone()).await;
++        }
++
+         // If this event implements the DBus capability, send the event to DBus devices
+         if matches!(cap, Capability::DBus(_)) {
+             self.targets.write_dbus_event(event).await;
