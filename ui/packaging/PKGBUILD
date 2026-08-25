@@ -1,0 +1,27 @@
+pkgname=hhd-fan-ui
+pkgver=0.1.1
+pkgrel=1
+pkgdesc="Lightweight fan-control overlay for Linux handhelds"
+arch=('x86_64')
+url="https://github.com/JosEffigy/hhd-fan"
+license=('LGPL-2.1-or-later')
+depends=('gtk3' 'webkit2gtk-4.1')
+makedepends=('npm' 'rust' 'cargo' 'patchelf')
+source=("hhd-fan-${pkgver}.tar.gz::https://github.com/JosEffigy/hhd-fan/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+prepare() {
+  cp -a "${srcdir}/hhd-fan-${pkgver}/ui" "${srcdir}/ui"
+}
+
+build() {
+  cd "${srcdir}/ui"
+  npm ci
+  npm run tauri build
+}
+
+package() {
+  cd "${srcdir}/ui"
+  install -Dm755 "src-tauri/target/release/hhd-fan-ui" "${pkgdir}/usr/bin/hhd-fan-ui"
+  install -Dm644 "packaging/hhd-fan-ui.desktop" "${pkgdir}/usr/share/applications/hhd-fan-ui.desktop"
+}

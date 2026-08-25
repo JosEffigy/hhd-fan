@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=hhd-fan UI
+Comment=Fan control overlay
+Exec=hhd-fan-ui
+Terminal=false
+Categories=System;Settings;

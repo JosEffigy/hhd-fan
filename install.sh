@@ -62,6 +62,11 @@ case "$(. /etc/os-release && printf '%s' "${ID_LIKE:-$ID}")" in
       sudo zypper --non-interactive install "${tmpdir}/hhd-fan-ui.rpm"
     fi
     ;;
+  *arch*)
+    ui_url="https://github.com/JosEffigy/hhd-fan/releases/latest/download/hhd-fan-ui-linux-x86_64.pkg.tar.zst"
+    curl -fL "${ui_url}" -o "${tmpdir}/hhd-fan-ui.pkg.tar.zst"
+    sudo pacman -U --noconfirm "${tmpdir}/hhd-fan-ui.pkg.tar.zst"
+    ;;
   *)
     echo "Unsupported package manager. Install the hhd-fan-ui .deb or .rpm release manually." >&2
     exit 1

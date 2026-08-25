@@ -32,6 +32,16 @@ jobs:
           cp src-tauri/target/release/bundle/deb/*.deb release/hhd-fan-ui-linux-amd64.deb
           cp src-tauri/target/release/bundle/rpm/*.rpm release/hhd-fan-ui-linux-x86_64.rpm
           sha256sum release/* > release/SHA256SUMS
+      - name: Build Arch package
+        run: |
+          docker run --rm -v "${GITHUB_WORKSPACE}:/work" -w /work archlinux:latest bash -lc '
+            pacman -Syu --noconfirm base-devel nodejs npm rust cargo patchelf gtk3 webkit2gtk-4.1
+            useradd -m builder
+            chown -R builder /work
+            su builder -c "cd /work/ui/packaging && makepkg --noconfirm --syncdeps --cleanbuild"
+          '
+          cp ui/packaging/*.pkg.tar.zst ui/release/hhd-fan-ui-linux-x86_64.pkg.tar.zst
+          sha256sum ui/release/* > ui/release/SHA256SUMS
       - name: Publish GitHub release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
