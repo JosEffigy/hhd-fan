@@ -1,0 +1,42 @@
+# Logs
+logs
+*.log
+*.diff
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+src-tauri/target
+src-tauri/gen
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# electron
+electron/*
+!electron/main.js
+!electron/README.md
+!electron/package.json
+!electron/package-lock.json
+!electron/yarn.lock
+!electron/icon*
+!electron/icon/*
+!electron/art*
+!electron/art/*
+!electron/preload.js
+!electron/scripts/
+!electron/scripts/after-pack.js

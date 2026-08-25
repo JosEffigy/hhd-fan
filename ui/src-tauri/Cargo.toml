@@ -1,0 +1,16 @@
+[package]
+name = "hhd-fan-ui"
+version = "0.1.0"
+description = "Lightweight fan-only handheld overlay"
+edition = "2021"
+license = "LGPL-2.1-or-later"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+tauri = { version = "2", features = [] }
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]
