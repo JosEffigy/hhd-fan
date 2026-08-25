@@ -1,7 +1,7 @@
 {
   "name": "hhd-fan-ui",
   "private": true,
-  "version": "3.4.0",
+  "version": "0.1.2",
   "license": "LGPL-2.1-or-later",
   "type": "module",
   "scripts": {

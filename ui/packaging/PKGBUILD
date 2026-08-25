@@ -1,5 +1,5 @@
 pkgname=hhd-fan-ui
-pkgver=0.1.1
+pkgver=0.1.2
 pkgrel=1
 pkgdesc="Lightweight fan-control overlay for Linux handhelds"
 arch=('x86_64')
