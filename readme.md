@@ -6,6 +6,8 @@ This focused downstream fork reuses and modifies code from [hhd](https://github.
 
 The overlay follows InputPlumber's active QAM mapping (double-tap), not HHD controller controls; the included InputPlumber patch must be applied where its logical QAM event is not already exposed.
 
+The UI is being migrated from Electron to a lighter Tauri shell; no Tauri release package is published yet.
+
 ```sh
 curl -fsSL https://raw.githubusercontent.com/JosEffigy/hhd-fan/master/install.sh | bash
 ```
